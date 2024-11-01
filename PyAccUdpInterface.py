@@ -1,14 +1,13 @@
 import datetime
-import time
-import socket
-from multiprocessing.connection import Connection
 import queue
-from multiprocessing import Process, Queue, Pipe
-from enum import Enum
-from copy import deepcopy
-
+import socket
 import struct
 import sys
+import time
+from copy import deepcopy
+from enum import Enum
+from multiprocessing import Pipe, Process, Queue
+from multiprocessing.connection import Connection
 
 
 class Cursor:
@@ -19,49 +18,49 @@ class Cursor:
 
     def read_u8(self) -> int:
 
-        data = self._byte_array[self._cursor: self._cursor + 1]
+        data = self._byte_array[self._cursor : self._cursor + 1]
         self._cursor += 1
 
         return int.from_bytes(data, byteorder=sys.byteorder, signed=False)
 
     def read_u16(self) -> int:
 
-        data = self._byte_array[self._cursor: self._cursor + 2]
+        data = self._byte_array[self._cursor : self._cursor + 2]
         self._cursor += 2
 
         return int.from_bytes(data, byteorder=sys.byteorder, signed=False)
 
     def read_u32(self) -> int:
 
-        data = self._byte_array[self._cursor: self._cursor + 4]
+        data = self._byte_array[self._cursor : self._cursor + 4]
         self._cursor += 4
 
         return int.from_bytes(data, byteorder=sys.byteorder, signed=False)
 
     def read_i8(self) -> int:
 
-        data = self._byte_array[self._cursor: self._cursor + 1]
+        data = self._byte_array[self._cursor : self._cursor + 1]
         self._cursor += 1
 
         return int.from_bytes(data, byteorder=sys.byteorder, signed=True)
 
     def read_i16(self) -> int:
 
-        data = self._byte_array[self._cursor: self._cursor + 2]
+        data = self._byte_array[self._cursor : self._cursor + 2]
         self._cursor += 2
 
         return int.from_bytes(data, byteorder=sys.byteorder, signed=True)
 
     def read_i32(self) -> int:
 
-        data = self._byte_array[self._cursor: self._cursor + 4]
+        data = self._byte_array[self._cursor : self._cursor + 4]
         self._cursor += 4
 
         return int.from_bytes(data, byteorder=sys.byteorder, signed=True)
 
     def read_f32(self) -> float:
 
-        data = self._byte_array[self._cursor: self._cursor + 4]
+        data = self._byte_array[self._cursor : self._cursor + 4]
         self._cursor += 4
 
         return struct.unpack("<f", data)[0]
@@ -70,7 +69,7 @@ class Cursor:
 
         lenght = self.read_u16()
 
-        string = self._byte_array[self._cursor: self._cursor + lenght]
+        string = self._byte_array[self._cursor : self._cursor + lenght]
         self._cursor += lenght
 
         # ACC doesn't support unicode emoji (and maybe orther
@@ -371,8 +370,7 @@ class RealTimeUpdate:
             # -1 means there is no time limit
             session_end_time = 0
 
-        self.session_end_time = datetime.datetime.fromtimestamp(
-            session_end_time)
+        self.session_end_time = datetime.datetime.fromtimestamp(session_end_time)
 
         self.focused_car_index = cur.read_i32()
         self.active_camera_set = cur.read_string()
@@ -388,16 +386,17 @@ class RealTimeUpdate:
             if replay_session_time != -1:
                 # -1 means there is no time limit
                 self.replay_session_time = datetime.datetime.fromtimestamp(
-                    replay_session_time)
+                    replay_session_time
+                )
 
             replay_remaining_time = cur.read_f32() // 1000
             if replay_remaining_time != -1:
                 # -1 means there is no time limit
                 self.replay_remaining_time = datetime.datetime.fromtimestamp(
-                    replay_remaining_time)
+                    replay_remaining_time
+                )
 
-        self.time_of_day = datetime.datetime.fromtimestamp(
-            cur.read_f32() / 1000)
+        self.time_of_day = datetime.datetime.fromtimestamp(cur.read_f32() / 1000)
         self.ambient_temp = cur.read_u8()
         self.track_temp = cur.read_u8()
         self.best_session_lap = LapInfo(cur)
@@ -497,8 +496,7 @@ class CarInfo:
 
     def __str__(self) -> str:
 
-        return (f"ID: {self.car_index} Team: {self.team_name} "
-                "N°: {self.race_number}")
+        return f"ID: {self.car_index} Team: {self.team_name} " "N°: {self.race_number}"
 
 
 class EntryList:
@@ -565,10 +563,7 @@ class accUpdInterface:
         self._cmd_psw = instance_info["cmd_password"]
 
         self._udp_data = {
-            "connection": {
-                "id": -1,
-                "connected": False
-            },
+            "connection": {"id": -1, "connected": False},
             "entries": {},
             "session": {
                 "track": "None",
@@ -576,7 +571,7 @@ class accUpdInterface:
                 "session_time": datetime.datetime.fromtimestamp(0),
                 "session_end_time": datetime.datetime.fromtimestamp(0),
                 "air_temp": 0,
-                "track_temp": 0
+                "track_temp": 0,
             },
         }
 
@@ -591,7 +586,8 @@ class accUpdInterface:
         self.child_pipe, self.parent_pipe = Pipe()
         self.data_queue = Queue()
         self.udp_interface_listener = Process(
-            target=self.listen_udp_interface, args=(self.child_pipe, self.data_queue))
+            target=self.listen_udp_interface, args=(self.child_pipe, self.data_queue)
+        )
 
     @property
     def udp_data(self):
@@ -600,7 +596,7 @@ class accUpdInterface:
             try:
                 return self.data_queue.get_nowait()
 
-            except(queue.Empty):
+            except queue.Empty:
                 # idk return None
                 return None
 
@@ -616,7 +612,7 @@ class accUpdInterface:
 
             now = datetime.datetime.now()
             # if connection was lost or not established wait 2s before asking again
-            if (not self.connected and (now - self._last_connection).total_seconds() > 2):
+            if not self.connected and (now - self._last_connection).total_seconds() > 2:
                 self.connect()
                 self._last_connection = datetime.datetime.now()
 
@@ -644,7 +640,7 @@ class accUpdInterface:
         self.parent_pipe.send("STOP_PROCESS")
 
         print("[pyUIL]: Waiting for process to finish...")
-        if (self.parent_pipe.recv() == "PROCESS_TERMINATED"):
+        if self.parent_pipe.recv() == "PROCESS_TERMINATED":
             # Need to empty the queue before joining process (qsize() isn't 100% accurate)
             while self.data_queue.qsize() != 0:
                 try:
@@ -653,7 +649,8 @@ class accUpdInterface:
                     pass
         else:
             print(
-                "[pyUIL]: Received unexpected message, program might be deadlock now.")
+                "[pyUIL]: Received unexpected message, program might be deadlock now."
+            )
 
         self.udp_interface_listener.join()
 
@@ -764,27 +761,29 @@ class accUpdInterface:
             first_name = "First Name"
             last_name = "Last Name"
 
-        self._udp_data["entries"][data.car_index].update({
-            "position": data.position,
-            "car_number": race_number,
-            "car_id": data.car_index,
-            "cup_category": cup_category.name,
-            "cup_position": data.cup_position,
-            "manufacturer": model_type,
-            "team": team_name,
-            "driver": {
-                "first_name": first_name,
-                "last_name": last_name,
-            },
-            "lap": data.lap,
-            "current_lap": data.current_lap.lap_time_ms,
-            "last_lap": data.last_lap.lap_time_ms,
-            "best_session_lap": data.best_session_lap.lap_time_ms,
-            "sectors": data.last_lap.splits,
-            "car_location": data.car_location.name,
-            "world_pos_x": data.world_pos_x,
-            "world_pos_y": data.world_pos_y
-        })
+        self._udp_data["entries"][data.car_index].update(
+            {
+                "position": data.position,
+                "car_number": race_number,
+                "car_id": data.car_index,
+                "cup_category": cup_category.name,
+                "cup_position": data.cup_position,
+                "manufacturer": model_type,
+                "team": team_name,
+                "driver": {
+                    "first_name": first_name,
+                    "last_name": last_name,
+                },
+                "lap": data.lap,
+                "current_lap": data.current_lap.lap_time_ms,
+                "last_lap": data.last_lap.lap_time_ms,
+                "best_session_lap": data.best_session_lap.lap_time_ms,
+                "sectors": data.last_lap.splits,
+                "car_location": data.car_location.name,
+                "world_pos_x": data.world_pos_x,
+                "world_pos_y": data.world_pos_y,
+            }
+        )
 
     def update_leaderboard_session(self) -> None:
 
@@ -850,12 +849,7 @@ if __name__ == "__main__":
 
     # Test zone
 
-    info = {
-        "name": "Ryan Rennoir",
-        "password": "asd",
-        "speed": 250,
-        "cmd_password": ""
-    }
+    info = {"name": "Ryan Rennoir", "password": "asd", "speed": 250, "cmd_password": ""}
 
     aui = accUpdInterface("127.0.0.1", 9000, info)
     aui.start()
