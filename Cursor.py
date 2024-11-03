@@ -59,10 +59,10 @@ class Cursor:
 
     def read_string(self) -> str:
 
-        lenght = self.read_u16()
+        length = self.read_u16()
 
-        string = self._byte_array[self._cursor : self._cursor + lenght]
-        self._cursor += lenght
+        string = self._byte_array[self._cursor : self._cursor + length]
+        self._cursor += length
 
         # ACC doesn't support unicode emoji (and maybe orther
         # unicode charactere)
