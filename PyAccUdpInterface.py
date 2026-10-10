@@ -75,24 +75,33 @@ class accUpdInterface:
         self.connect()
 
         message = ""
-        while message != "STOP_PROCESS":
+        try:
+            while message != "STOP_PROCESS":
 
-            if child_pipe.poll():
-                message = child_pipe.recv()
+                if child_pipe.poll():
+                    message = child_pipe.recv()
 
-            now = datetime.datetime.now()
-            # if connection was lost or not established wait 2s before asking again
-            if not self.connected and (now - self._last_connection).total_seconds() > 2:
-                self.connect()
-                self._last_connection = datetime.datetime.now()
+                now = datetime.datetime.now()
+                # if connection was lost or not established wait 2s before asking again
+                if (
+                    not self.connected
+                    and (now - self._last_connection).total_seconds() > 2
+                ):
+                    self.connect()
+                    self._last_connection = datetime.datetime.now()
 
-            else:
-                self.update()
+                else:
+                    self.update()
 
-            if message == "DATA_REQUEST":
-                data_queue.put(deepcopy(self._udp_data))
-                child_pipe.send("DATA_OK")
-                message = ""
+                if message == "DATA_REQUEST":
+                    data_queue.put(deepcopy(self._udp_data))
+                    child_pipe.send("DATA_OK")
+                    message = ""
+
+        except KeyboardInterrupt:
+            # Handle Ctrl+C gracefully in subprocess
+            print("\n[pyUIL]: Keyboard interrupt received in listener process.")
+            message = "STOP_PROCESS"
 
         self.disconnect()
         self._socket.close()
@@ -246,13 +255,16 @@ class accUpdInterface:
                 },
                 "lap": data.lap,
                 "delta": data.delta,
-                "current_lap": data.current_lap.lap_time_ms,
-                "last_lap": data.last_lap.lap_time_ms,
-                "best_session_lap": data.best_session_lap.lap_time_ms,
+                "current_lap": data.current_lap,
+                "last_lap": data.last_lap,
+                "best_session_lap": data.best_session_lap,
                 "sectors": data.last_lap.splits,
                 "car_location": data.car_location.name,
+                "spline_position": data.spline_position,
                 "world_pos_x": data.world_pos_x,
                 "world_pos_y": data.world_pos_y,
+                "gear": data.gear - 1,
+                "kph": data.kph,
             }
         )
 
@@ -261,7 +273,7 @@ class accUpdInterface:
         session = self._udp_data["session"]
         session.clear()
 
-        session["track"] = self.track.track_name
+        session["track"] = self.track
         session["session_type"] = self.session.session_type.name
         session["session_time"] = self.session.session_time
         session["session_end_time"] = self.session.session_end_time
@@ -278,7 +290,7 @@ class accUpdInterface:
         msg.write_i32(self._speed)
         msg.write_str(self._cmd_psw)
 
-        print(msg.get_bytes())
+        # print(msg.get_bytes())
 
         self._socket.sendto(msg.get_bytes(), (self._ip, self._port))
         self.connected = True
