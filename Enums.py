@@ -100,9 +100,9 @@ class CarLocation(Enum):
 
     NONE = 0
     Track = 1
-    Pitlane = 2
-    PitEntry = 3
-    PitExit = 4
+    PitEntry = 2
+    PitExit = 3
+    Pitlane = 4
 
 
 class DriverCategory(Enum):
